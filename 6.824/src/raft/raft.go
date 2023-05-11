@@ -253,15 +253,17 @@ func (rf *Raft) doElectcion() {
 	defer rf.mu.Unlock()
 	votes := 1
 	abortElection := false
+	rfct := rf.currentTerm
+	rfme := rf.me
 	for i := range rf.peers {
-		if i == rf.me {
+		if i == rfme {
 			continue
 		}
 		go func(i int) {
 			ok := false
 			rf.mu.Lock()
 			defer rf.mu.Unlock()
-			args := &RequestVoteArgs{rf.currentTerm, rf.me}
+			args := &RequestVoteArgs{rfct, rfme}
 			reply := &RequestVoteReply{0, false}
 			for !ok {
 				if rf.killed() {
@@ -276,7 +278,7 @@ func (rf *Raft) doElectcion() {
 			}
 			if reply.VoteGranted {
 				votes++
-				if (2*votes > len(rf.peers)) && (!abortElection) && (reply.Term == rf.currentTerm) {
+				if (2*votes > len(rf.peers)) && (!abortElection) && (reply.Term == rfct) {
 					// fmt.Printf("State = 2, id = %v, term = %v, %v, voted by %v\n", rf.me, rf.currentTerm, len(rf.peers), i)
 					rf.state = 2
 					rf.clockCounter = 1
